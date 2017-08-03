@@ -1,11 +1,12 @@
 // @flow
 // Taken from https://github.com/react-bootstrap/react-overlays/blob/master/src/ModalManager.js
 
-import isWindow from 'dom-helpers/query/isWindow';
-import ownerDocument from 'dom-helpers/ownerDocument';
+import { ariaHidden, hideSiblings, showSiblings } from '../utils/manageAriaHidden';
+
 import canUseDom from 'dom-helpers/util/inDOM';
 import getScrollbarSize from 'dom-helpers/util/scrollbarSize';
-import { hideSiblings, showSiblings, ariaHidden } from '../utils/manageAriaHidden';
+import isWindow from 'dom-helpers/query/isWindow';
+import ownerDocument from 'dom-helpers/ownerDocument';
 
 function getPaddingRight(node) {
   return parseInt(node.style.paddingRight || 0, 10);
@@ -19,24 +20,34 @@ function bodyIsOverflowing(node) {
   return doc.body.clientWidth < win.innerWidth;
 }
 
-// The container shouldn't be used on the server.
-const defaultContainer = canUseDom ? window.document.body : {};
-
 /**
  * State management helper for modals/layers.
  * Simplified, but inspired by react-overlay's ModalManager class
  *
  * @internal Used by the Modal to ensure proper focus management.
  */
-function createModalManager(
-  { container = defaultContainer, hideSiblingNodes = true }: Object = {},
-) {
+function createModalManager(opts: Object = {}) {
+
+  const hideSiblingNodes = opts.hideSiblingNodes;
+
   const modals = [];
 
   let prevOverflow;
   let prevPaddings = [];
 
+  function getContainer() {
+    if (opts.container) {
+      return opts.container;
+    } else {
+      // The container shouldn't be used on the server.
+      return canUseDom ? window.document.body : {}
+    }
+  }
+
   function add(modal: Object) {
+
+    const container = getContainer();
+
     let modalIdx = modals.indexOf(modal);
 
     if (modalIdx !== -1) {
@@ -74,6 +85,8 @@ function createModalManager(
   }
 
   function remove(modal: Object) {
+    const container = getContainer();
+
     const modalIdx = modals.indexOf(modal);
 
     if (modalIdx === -1) {
